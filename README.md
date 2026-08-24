@@ -4,7 +4,7 @@ Egysoros gyorsrögzítő és mérési réteg agilis csapatvezetőknek — nem
 Jira-pótlék, hanem egy jegyzet, amit egy meeting közben öt másodperc
 alatt, egyetlen sorba írva rögzítesz, AI-val alakítasz belőle használható
 artifaktot, és az app **méri**, hogy az AI ténylegesen spórol-e időt,
-ahelyett hogy csak feltételezné.
+ahelyett hogy csak feltételeznénk.
 
 Egyfelhasználós, saját használatra épített projekt, ami emellett teljes
 körű technikai gyakorlatot mutat be: adatmodellezés, AI-integráció
@@ -41,8 +41,7 @@ egy meeting alatt ne kelljen újra beállítani semmit.
 
 Egy jegyzetből egy kattintással user story, backlog elem, kollégának
 szóló feladatleírás vagy utánkövető üzenet lesz — retro nézetben pedig
-egy AI-szintézis emel ki témákat és ismétlődő akadályokat a bejegyzés-
-folyamból.
+egy AI-szintézis emel ki témákat és ismétlődő akadályokat a bejegyzésfolyamból.
 
 **A kulcsdöntés**: minden AI-kimenet egy review-panelen megy át
 (szerkeszthető, Elfogadom/Eldobom) — az AI *soha* nem ír semmit
@@ -116,6 +115,7 @@ kiszolgálni séma-változtatás nélkül.
 - **[Vitest](https://vitest.dev)** — parser és AI-segédfüggvény unit tesztek
 - **[`openai`](https://github.com/openai/openai-node)** SDK (OpenAI-kompatibilis wire formátum, nem provider-lock-in) + **`zod`**
 - **n8n** — kétirányú webhook-automatizáció (Slack, Google Sheets, Gmail, Google Docs, Google Forms)
+- A fejlesztés AI-asszisztált módszerrel ("vibe coding") készült.
 
 ---
 
