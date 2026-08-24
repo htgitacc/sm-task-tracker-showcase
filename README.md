@@ -115,7 +115,7 @@ kiszolgálni séma-változtatás nélkül.
 - **[Vitest](https://vitest.dev)** — parser és AI-segédfüggvény unit tesztek
 - **[`openai`](https://github.com/openai/openai-node)** SDK (OpenAI-kompatibilis wire formátum, nem provider-lock-in) + **`zod`**
 - **n8n** — kétirányú webhook-automatizáció (Slack, Google Sheets, Gmail, Google Docs, Google Forms)
-- A fejlesztés AI-asszisztált módszerrel ("vibe coding") készült.
+- A fejlesztés AI-asszisztált módszerrel (vibe coding) készült.
 
 ---
 
