@@ -97,6 +97,8 @@ A #3 és #5 nulla app-kóddal épült fel — ez igazolja vissza az eredeti
 döntést: egy jól megtervezett esemény sok különböző fogyasztót tud
 kiszolgálni séma-változtatás nélkül.
 
+![n8n worflows](08-n8n-workflows.png)
+
 ---
 
 ## Minden bejegyzés, retro-előkészítő
