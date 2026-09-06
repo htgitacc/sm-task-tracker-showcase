@@ -41,6 +41,22 @@ mid-meeting.
 
 ---
 
+## Voice capture: when there's no time to type mid-meeting
+
+The same idea, by voice: a short recording with several unrelated remarks
+("Impediment, staging is slow to start… Reminder, call Kate about the
+license") gets split into a **separate candidate entry for each one** —
+with type, owner, tag, and due date — and the same review-panel principle
+applies: nothing lands in the app automatically, you Accept or Discard
+each candidate individually. Under the hood it's a two-step AI call
+(Whisper-compatible transcription, then a structuring step), and the
+decision feeds into the same measurement layer as the text-based
+templates.
+
+![Voice capture — the candidate list on the review panel after a recording](09-hangrogzites.png)
+
+---
+
 ## The AI layer: not "there's AI," but *measured to see if it's worth it*
 
 One click turns a note into a user story, backlog item, colleague brief,
