@@ -37,6 +37,21 @@ egy meeting alatt ne kelljen újra beállítani semmit.
 
 ---
 
+## Hangrögzítés: ha meeting közben nincs idő gépelni
+
+Ugyanez hang alapon: egy rövid felvételben elmondott több különálló
+megjegyzésből ("Akadály, a staging lassan indul… Emlékeztető, hívjam fel
+Katát a licenc miatt") a rendszer **külön candidate-bejegyzést** készít
+mindegyikből — típussal, felelőssel, címkével, határidővel —, és ugyanaz
+a review-panel elv érvényesül: semmi nem kerül be automatikusan,
+candidate-onként Elfogadod vagy Eldobod. Kétlépéses AI-hívás áll mögötte
+(Whisper-kompatibilis transzkripció, majd egy struktúráló lépés), és a
+döntés ugyanúgy bekerül a mérési rétegbe, mint a szöveges sablonoknál.
+
+![Hangrögzítés — felvétel után a candidate-lista a review-panelen](09-hangrogzites.png)
+
+---
+
 ## AI-réteg: nem "van AI", hanem *mérve van, hogy megéri-e*
 
 Egy jegyzetből egy kattintással user story, backlog elem, kollégának
