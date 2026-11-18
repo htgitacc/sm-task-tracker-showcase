@@ -8,11 +8,58 @@ assuming it is.
 
 A single-user project built for personal use that also doubles as a
 full-stack technical showcase: data modeling, provider-independent AI
-integration, a measurement layer, and a two-way automation layer built on
-n8n.
+integration, a measurement layer, security, and outbound/inbound
+integrations — **now all in our own code, with no external automation
+platform**.
 
 *(The interface itself is in Hungarian — it was built for the author's own
 day-to-day use as a team lead. The screenshots below reflect that.)*
+
+> **AI-assisted development.** This project was built in an AI-assisted
+> workflow (Claude Code): I made the decisions on requirements, trade-offs
+> and verification, and wrote the code together with the AI assistant, in
+> phases, with tests and reviews.
+
+---
+
+## A new level: solved in code, securely, and tidily
+
+The first version delegated external connections (Slack, Google Sheets,
+Gmail, Google Docs) to an n8n automation platform. It worked quickly, but
+the integration logic lived outside the application: untestable, outside
+version control, a hidden dependency. The step up was moving **everything
+into code**, and four things visibly improved along the way:
+
+**1. No more automated wiring — everything is code.** Outbound and inbound
+integrations live in the repo, are tested and versioned. The n8n version is
+archived (see the bottom of this page), its last working state preserved in
+a git tag.
+
+**2. Better security.**
+- The live demo sits behind a password gate and **fails closed** on a
+  misconfiguration (it never silently opens up).
+- Login brute-force protection that lives in the database (memory doesn't
+  persist in a serverless environment), with atomic attempt counting.
+- Every Server Action **checks the session itself** and validates input with
+  `zod` — the proxy is not the only line of defence.
+- The inbound endpoint (Google Form) is protected by an **HMAC-SHA256
+  signature**, not the password gate; AI prompts no longer ship in the
+  browser bundle, guarded by an automated test.
+- The critical parts (login, signature verification) went through a separate
+  security review, which found a real bug that was then fixed.
+
+**3. Tidy API keys.** The AI layer's primary provider is DeepSeek, with Groq
+as fallback and for speech transcription; the three previous providers' keys
+are gone. Every variable is documented in a version-controlled
+`.env.example` (no values), secrets are managed in matched pairs, and the old
+keys have been revoked. The `/insights` page shows runs and errors per
+provider.
+
+**4. Better runtime quality.** 313 automated tests (52 before the rework),
+fixed `Europe/Budapest` date handling (so "today" doesn't slip after
+midnight), atomic database writes, voice-capture fixes (error handling,
+length and size limits), a new dark theme, a mobile-friendly layout, and
+Retro and Meeting prep merged into a single **Meetings** menu.
 
 ---
 
@@ -37,119 +84,128 @@ tag, `>` the due date, `!` importance — plus a context switcher ("what I'm
 in right now: daily / 1:1 / retro / …"), so nothing needs to be re-entered
 mid-meeting.
 
-![Today view — quick capture and today's items](01-ma-nezet.png)
+![Today view — quick capture and today's items, in the new dark theme](01-ma-nezet.png)
 
 ---
 
-## Voice capture: when there's no time to type mid-meeting
+## Meetings: preparation and look-back in one place
 
-The same idea, by voice: a short recording with several unrelated remarks
-("Impediment, staging is slow to start… Reminder, call Kate about the
-license") gets split into a **separate candidate entry for each one** —
-with type, owner, tag, and due date — and the same review-panel principle
-applies: nothing lands in the app automatically, you Accept or Discard
-each candidate individually. Under the hood it's a two-step AI call
-(Whisper-compatible transcription, then a structuring step), and the
-decision feeds into the same measurement layer as the text-based
-templates.
+The `/meetings` menu has two tabs: **Preparation** (an AI agenda built from
+open impediments and action items) and **Look-back** (retro, by period,
+grouped by type, with AI synthesis and markdown export).
 
-![Voice capture — the candidate list on the review panel after a recording](09-hangrogzites.png)
+![Meetings — look-back, grouped by type](02-meetingek.png)
 
 ---
 
 ## The AI layer: not "there's AI," but *measured to see if it's worth it*
 
-One click turns a note into a user story, backlog item, colleague brief,
-or follow-up message — and in the retro view, an AI synthesis surfaces
-recurring themes and impediments across the whole entry stream.
+One click turns a note into a user story, backlog item, colleague brief, or
+follow-up message; in the retro view, an AI synthesis surfaces recurring
+themes and impediments.
 
 **The key decision**: every AI output goes through a review panel
 (editable, Accept/Discard) — the AI *never* writes anything to the app
 automatically. That's not just a safety net, it's the basis for the
 measurement: every decision is logged (accepted / edited / discarded, how
 much the text changed), so the `/insights` page can answer, with data,
-whether the AI is actually saving time — not by impression.
+whether the AI is actually saving time.
 
-![AI metrics — acceptance rate per template, provider comparison](02-ai-meres.png)
+**Provider-independent**: an OpenAI-compatible wire format, with automatic
+switching between the primary (DeepSeek) and fallback (Groq) provider on
+quota, authorization or server errors. Every run is logged with the provider
+and model name, so the page also shows which model performs better on the
+author's own notes. The bottom of the page lists the latest integration
+deliveries.
 
-![AI history — every decision traceable, with the actual text](06-ai-elozmenyek.png)
+![AI metrics — acceptance rate per template, providers, integration log](03-ai-meres.png)
 
-**Provider-independent**: the layer is built on an OpenAI-compatible wire
-format, with a 3-tier fallback chain (Groq → CLōD → Gemini) that switches
-automatically on quota or server errors. The same code runs against any
-provider — and since every run is logged together with the provider name,
-the `/insights` page also shows which *free* model actually performs
-better on the author's own notes.
-
-![AI generation live — the review panel showing a real meeting-prep agenda](05-meeting-prep-ai-panel.png)
-
----
-
-## Two-way automation with n8n
-
-This project's most interesting architectural decision: **one generic,
-signed webhook event, not per-template integrations.** After the first two
-events were introduced, every further workflow was built **entirely on
-the n8n side**, with zero app code changes.
-
-**Outbound** (app → n8n):
-- `entry.impediment_created` — fires when an Impediment entry is saved
-- `ai.accepted` — fires on any accepted AI output, with a `data.template`
-  field identifying which template produced it
-
-**Inbound** (n8n → app), protected by a separate secret, not the app's
-password gate:
-- team members can flag an impediment through a Google Form, without ever
-  opening the app
-
-Both events together power all **6 workflows built so far**:
-
-| # | Workflow | Target node | Needed app code? |
-|---|---|---|---|
-| 1 | Impediment → Slack alert | Slack | yes (introduced the first event) |
-| 2 | Accepted backlog item → Google Sheet | Sheets | yes (introduced `ai.accepted`) |
-| 3 | Accepted follow-up message → Gmail draft | Gmail | **no** |
-| 4 | Accepted retro synthesis → Google Docs | Docs | yes (small field addition) |
-| 5 | Accepted meeting-prep → Slack | Slack | **no** |
-| 6 | Google Form → app (creates an Impediment) | — | yes (inbound endpoint) |
-
-Workflows #3 and #5 were built with zero app code — proof of the original
-bet: one well-designed event can serve many different consumers without
-any schema changes.
-
-![n8n workflows](08-n8n-workflows.png)
+**Voice capture** builds on the same principle: several remarks spoken in one
+short recording become separate candidate entries (type, owner, tag, due
+date); you Accept or Discard each one, and the decision feeds the
+measurement. A two-step AI call (Whisper-compatible transcription, then
+structuring) is behind it.
 
 ---
 
-## All entries, retro prep
+## Native integrations (replacing n8n)
 
-![All entries — filterable list, color-coded by type](03-minden-bejegyzes.png)
+Events leave through the `lib/integrations/` layer: one event type, one
+routing row and one *sink* (target) per new delivery. Delivery runs in the
+background after the save (it never slows capture down), failures are
+recorded in an `integration_log` table, and `/insights` shows them.
 
-![Retro prep — grouped by type, with AI synthesis](04-retro.png)
+| Direction | Event | Target |
+|---|---|---|
+| Out | Impediment saved | **Telegram** message |
+| Out | Accepted backlog item | **Google Sheets** row (service account, no external package, own JWT signing) |
+| Out | Accepted meeting prep | **Telegram** message |
+| Out | Daily summary | **Telegram**, triggered by Vercel Cron |
+| In | Google Form (a team member's impediment) | **Apps Script** → HMAC-signed request → entry in the app |
+
+### Telegram daily summary
+
+The daily digest shows, in one message, **who needs to watch what**: for
+every open or waiting item that has an owner, the AI writes a short,
+ready-to-send follow-up message, and the digest is grouped by @name,
+overdue items first. On a phone, without opening the app, you can see who
+owes what. It runs once a day, and `integration_log` records that it ran.
+
+![Telegram daily summary — items grouped by @name](04-telegram-digest.png)
+
+### The Google Form side
+
+Team members can flag an impediment without opening the app, through a
+Google Form. On submit, an Apps Script sends the body as plain-ASCII JSON,
+signed with `HMAC-SHA256(secret, timestamp + "." + body)`, to the app's
+inbound endpoint. The app verifies the signature and the timestamp,
+idempotently creates the Impediment entry keyed by the response ID, and
+notifies via Telegram. The signature doesn't depend on character encoding,
+because accented text travels as `\uXXXX` escapes.
 
 ---
 
 ## Tech stack
 
 - **Next.js 16** (App Router, Server Actions, Route Handlers) + TypeScript
-- **Tailwind CSS v4**
+- **Tailwind CSS v4**, a custom dark theme with semantic tokens
 - **Drizzle ORM** + libSQL (SQLite locally, [Turso](https://turso.tech) in the cloud)
-- **[Vitest](https://vitest.dev)** — unit tests for the parser and AI helper functions
-- **[`openai`](https://github.com/openai/openai-node)** SDK (OpenAI-compatible wire format, no provider lock-in) + **`zod`**
-- **n8n** — two-way webhook automation (Slack, Google Sheets, Gmail, Google Docs, Google Forms)
-- Built with an AI-assisted workflow (vibe coding).
+- **[Vitest](https://vitest.dev)** — 313 tests (parser, dates, AI runs, login, authorization, HMAC, client-bundle guard)
+- **[`openai`](https://github.com/openai/openai-node)** SDK (OpenAI-compatible wire format) + **`zod`**
+- **DeepSeek** (primary) and **Groq** (fallback, Whisper transcription)
+- **Telegram Bot API**, **Google Sheets API**, **Google Apps Script**, **Vercel Cron**
+- Built with an AI-assisted workflow (Claude Code).
 
 ---
 
 ## Live demo
 
-There's a deployed, `Vercel + Turso`-based version with made-up demo data
-— not a public link, since the AI layer runs on free, quota-limited APIs,
-and a publicly shared demo could easily burn through the daily quota.
-**Happy to show it live on request**, or grant access.
+There's a deployed, `Vercel + Turso`-based version with made-up demo data,
+behind a password gate — not a public link, since the AI layer runs on
+quota-limited, partly paid APIs. **Happy to show it live on request**, or
+grant access.
+
+---
+
+## An earlier, closed chapter: the n8n-based integration
+
+In the first version, external connections ran on an n8n automation
+platform: one generic, signed webhook event with 6 workflows built on top
+(Slack alert, Google Sheet, Gmail draft, Google Docs, meeting prep to
+Slack, Google Form → app). A nice lesson was that two workflows needed zero
+app code, proving that one well-designed event can serve many consumers. I
+later replaced it with our own code, so the logic is testable, versioned and
+in one place, with fewer external dependencies. The last working n8n state
+is preserved in the `archive/n8n-integration` git tag.
+
+![The earlier n8n workflows (closed, archived solution)](05-n8n-archivum.png)
+
+Screenshots and READMEs of earlier states are kept in the
+[archive](archive/), so the project's progression can be followed step by
+step.
 
 ---
 
 *The screenshots above were taken against a demo database (made-up names,
-projects) — in actual use, the notes are naturally about the author's own,
-private work.*
+projects, metrics and delivery records) — in actual use, the notes are
+naturally about the author's own, private work.*
